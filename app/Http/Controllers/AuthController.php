@@ -13,12 +13,15 @@ use Illuminate\Support\Facades\DB;
 use Tymon\JWTAuth\Facades\JWTAuth as JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException as JWTException;
 
+
+use Intervention\Image\ImageManagerStatic as Image;
+
 class AuthController extends Controller
 {
 
     public function __construct()
     {
-        $this->middleware('jwt.auth', ['only' => ['profil', 'detail','logout']]);
+        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'logout']]);
     }
 
     public function store(Request $request)
@@ -64,7 +67,13 @@ class AuthController extends Controller
 
                 $name = !is_null($name) ? $name : Str::random(25);
 
-                $file = $image->storeAs($folder, $name . '.' . $image->getClientOriginalExtension(), 'public');
+                $img = Image::make($image->getRealPath());
+
+                $img->resize(300, 300, function ($constraint) {
+                    $constraint->aspectRatio();
+                })->save(public_path($filePath));
+
+                // $file = $image->storeAs($folder, $name . '.' . $image->getClientOriginalExtension(), 'public');
 
                 // Set user profile image path in database to filePath
                 $user->image = url('/') . $filePath;
@@ -220,7 +229,13 @@ class AuthController extends Controller
 
                     $name = !is_null($name) ? $name : Str::random(25);
 
-                    $file = $image->storeAs($folder, $name . '.' . $image->getClientOriginalExtension(), 'public');
+                    $img = Image::make($image->getRealPath());
+
+                    $img->resize(300, 300, function ($constraint) {
+                        $constraint->aspectRatio();
+                    })->save(public_path($filePath));
+
+                    // $file = $image->storeAs($folder, $name . '.' . $image->getClientOriginalExtension(), 'public');
                     // delete image lama
                     if ($image_lama != public_path() . '/profile/default.jpg') {
                         File::delete($image_lama);
