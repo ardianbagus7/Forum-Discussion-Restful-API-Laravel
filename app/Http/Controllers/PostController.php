@@ -5,6 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Post;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
+
+use Tymon\JWTAuth\Facades\JWTAuth as JWTAuth;
+use Tymon\JWTAuth\Exceptions\JWTException as JWTException;
 
 class PostController extends Controller
 {
@@ -20,13 +25,7 @@ class PostController extends Controller
      */
     public function index()
     {
-        $posts = Post::all();
-        foreach ($posts as $post) {
-            $post->view_post = [
-                'href' => 'api/v1/post/' . $post->id,
-                'method' => 'GET'
-            ];
-        }
+        $posts = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
 
         $response = [
             'msg' => 'List of all posts',
@@ -51,42 +50,70 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
+        try {
 
-        $this->validate($request, [
-            'title' => 'required',
-            'description' => 'required',
-            'kategori' => 'required',
-            'user_id' => 'required',
-        ]);
+            if (!$user = JWTAuth::toUser($request->bearerToken())) {
+                return response()->json(['message' => 'user_not_found'], 404);
+            } else {
+                $this->validate($request, [
+                    'title' => 'required',
+                    'description' => 'required',
+                    'kategori' => 'required',
+                ]);
 
-        $title = $request->input('title');
-        $description = $request->input('description');
-        $kategori = $request->input('kategori');
-        $user_id = $request->input('user_id');
+                $user = JWTAuth::toUser($request->bearerToken());
 
-        $post = new Post([
-            'kategori' => $kategori,
-            'title' => $title,
-            'description' => $description
-        ]);
+                $user_id = $user->id;
+                $title = $request->input('title');
+                $description = $request->input('description');
+                $kategori = $request->input('kategori');
 
-        if ($post->save()) {
-            $post->view_post = [
-                'href' => 'api/v1/post/' . $post->id,
-                'method' => 'GET'
-            ];
-            $message = [
-                'msg' => 'Post created',
-                'post' => $post
-            ];
-            return response()->json($message, 201);
+                $post = new Post([
+                    'kategori' => $kategori,
+                    'title' => $title,
+                    'description' => $description,
+                    'user_id' => $user_id
+                ]);
+
+                if ($request->has('image')) {
+                    $image = $request->file('image');
+                    // Make a image name based on user name and current timestamp
+                    $name = Str::slug($request->input('title')) . '_' . time();
+                    // Define folder path
+                    $folder = '/post/';
+                    // Make a file path where image will be stored [ folder path + file name + file extension]
+                    $filePath = $folder . $name . '.' . $image->getClientOriginalExtension();
+                    // Upload image
+
+                    $name = !is_null($name) ? $name : Str::random(25);
+
+                    $file = $image->storeAs($folder, $name . '.' . $image->getClientOriginalExtension(), 'public');
+
+                    // Set user profile image path in database to filePath
+                    $post->image = url('/') . $filePath;
+                } else {
+                    $post->image = url('/') . '/post/default.jpg';
+                }
+
+
+                if ($post->save()) {
+
+                    $message = [
+                        'msg' => 'Post created',
+                        'post' => $post
+                    ];
+                    return response()->json($message, 201);
+                }
+
+                $response = [
+                    'msg' => 'Error during creating'
+                ];
+
+                return response()->json($response, 404);
+            }
+        } catch (JWTException $e) {
+            return response()->json(['message' => 'Something went wrong'], 404);
         }
-
-        $response = [
-            'msg' => 'Error during creating'
-        ];
-
-        return response()->json($response, 404);
     }
 
     /**
@@ -98,19 +125,13 @@ class PostController extends Controller
     public function show($id)
     {
 
-        $post = Post::with('users')->where('id', $id)->firstOrFail();
-        $komentar = DB::table('posts')->join('komentars', 'posts.id', '=', 'komentars.post_id')->join('users', 'komentars.user_id', '=', 'users.id')->where('post_id',$id)->select('user_id', 'name', 'nrp', 'komentar', 'komentars.created_at')->get();
-
-        $post->view_setting = [
-            'href' => 'api/v1/post',
-            'method' => 'GET'
-        ];
-
-        $post->komentar = $komentar;
+        $post = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->where('posts.id', $id)->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori','description', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
+        $komentar = DB::table('posts')->join('komentars', 'posts.id', '=', 'komentars.post_id')->join('users', 'komentars.user_id', '=', 'users.id')->where('post_id', $id)->select('komentars.user_id','users.image', 'name', 'nrp', 'users.image', 'komentar', 'komentars.created_at')->get();
 
         $response = [
             'msg' => 'Post information',
-            'post' => $post
+            'post' => $post,
+            'komentar' => $komentar,
 
         ];
         return response()->json($response, 200);
@@ -133,47 +154,58 @@ class PostController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $this->validate($request, [
-            'title' => 'required',
-            'description' => 'required',
-            'kategori' => 'required',
-            'user_id' => 'required',
-        ]);
-
-        $title = $request->input('title');
-        $description = $request->input('description');
-        $kategori = $request->input('kategori');
-        $user_id = $request->input('user_id');
 
         $post = Post::with('users')->findOrFail($id);
+        $user = JWTAuth::toUser($request->bearerToken());
+        $user_id = $user->id;
 
-        if (!$post->users()->where('users.id', $user_id)->first()) {
-            return response()->json([
-                'msg' => 'user not registered for post, update not successful'
-            ], 401);
+        try {
+            if ($user_id != $post->user_id) {
+                return response()->json(['message' => 'bukan creator post'], 404);
+            } else {
+
+                $this->validate($request, [
+                    'title' => 'required',
+                    'description' => 'required',
+                    'kategori' => 'required',
+                ]);
+
+                $title = $request->input('title');
+                $description = $request->input('description');
+                $kategori = $request->input('kategori');
+
+
+                if (!$post->where('user_id', $user_id)->first()) {
+                    return response()->json([
+                        'msg' => 'user not registered for post, update not successful'
+                    ], 404);
+                }
+
+                $post->kategori = $kategori;
+                $post->title = $title;
+                $post->description = $description;
+
+                if (!$post->save()) {
+                    return response()->json([
+                        'msg' => 'Error during update'
+                    ], 404);
+                }
+
+                $post->view_post = [
+                    'href' => 'api/v1/post/' . $post->id,
+                    'method' => 'GET'
+                ];
+
+                $response = [
+                    'msg' => 'Post Updated',
+                    'method' => $post
+                ];
+
+                return response()->json($response, 200);
+            }
+        } catch (JWTException $e) {
+            return response()->json(['message' => 'Something went wrong'], 404);
         }
-
-        $post->kategori = $kategori;
-        $post->title = $title;
-        $post->description = $description;
-
-        if (!$post->save()) {
-            return response()->json([
-                'msg' => 'Error during update'
-            ], 404);
-        }
-
-        $post->view_post = [
-            'href' => 'api/v1/post/' . $post->id,
-            'method' => 'GET'
-        ];
-
-        $response = [
-            'msg' => 'Post Updated',
-            'method' => $post
-        ];
-
-        return response()->json($response, 200);
     }
 
     /**
@@ -182,28 +214,73 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         $post = Post::findOrFail($id);
-        $users = $post->users;
-        $post->users()->detach(); //melepaskan relasi user terhadap post kebalikan attach
+        $user = JWTAuth::toUser($request->bearerToken());
+        $user_id = $user->id;
+        $image_lama = explode('/', $post->image);
+        $image_lama = public_path() . '/' . $image_lama[3] . '/' . $image_lama[4];
 
-        if (!$post->delete()) {
-            foreach ($users as $user) {
-                $post->user()->attach($user);
+        try {
+
+            if ($user_id != $post->user_id) {
+                return response()->json(['message' => 'bukan creator post'], 404);
+            } else {
+
+                if (!$post->delete()) {
+                    return response()->json([
+                        'msg' => 'Delete failed'
+                    ], 404);
+                }
+
+                $response = [
+                    'msg' => 'Post deleted',
+                ];
+
+                if ($image_lama != public_path() . '/post/default.jpg') {
+                    File::delete($image_lama);
+                }
+
+                return response()->json($response, 200);
             }
-            return response()->json([
-                'msg' => 'Delete failed'
-            ], 404);
+        } catch (JWTException $e) {
+            return response()->json(['message' => 'Something went wrong'], 404);
         }
+    }
+
+    public function search(Request $request)
+    {
+        $this->validate($request, [
+            'title' => 'required',
+        ]);
+
+        $title = $request->input('title');
+
+        $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('title', 'like', '%' . $title . '%')->orderByRaw('created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
 
         $response = [
-            'msg' => 'Post deleted',
-            'create' => [
-                'href' => 'api/v1/post',
-                'method' => 'POST',
-                'params' => 'title,description,kategori'
-            ]
+            'msg' => 'search succes',
+            'posts' => $data
+        ];
+
+        return response()->json($response, 200);
+    }
+
+    
+    public function filter(Request $request)
+    {
+        $this->validate($request, [
+            'kategori' => 'required',
+        ]);
+
+        $kategori = $request->input('kategori');
+
+        $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('kategori', 'like', '%' . $kategori . '%')->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
+
+        $response = [
+            'msg' => 'filter succes',
+            'posts' => $data
         ];
 
         return response()->json($response, 200);

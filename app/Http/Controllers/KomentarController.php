@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Komentar;
 use Illuminate\Http\Request;
 
+use Tymon\JWTAuth\Facades\JWTAuth as JWTAuth;
+use Tymon\JWTAuth\Exceptions\JWTException as JWTException;
+
 class KomentarController extends Controller
 {
     public function __construct()
@@ -35,37 +38,49 @@ class KomentarController extends Controller
      */
     public function store(Request $request)
     {
-        $this->validate($request, [
-            'user_id' => 'required',
-            'post_id' => 'required',
-            'komentar' => 'required',
-        ]);
 
-        $user_id = $request->input('user_id');
-        $post_id = $request->input('post_id');
-        $komentar = $request->input('komentar');
+        try {
 
-        $komentar_db = new Komentar([
-            'user_id' => $user_id,
-            'post_id' => $post_id,
-            'komentar' => $komentar
-        ]);
+            if (!$user = JWTAuth::toUser($request->bearerToken())) {
+                return response()->json(['message' => 'user_not_found'], 404);
+            } else {
 
-        if ($komentar_db->save()) {
-            $message = [
-                'msg' => 'Komentar created',
-                'user id' => $user_id,
-                'post id' => $post_id,
-                'komentar' => $komentar,
-            ];
-            return response()->json($message,201);
+                $this->validate($request, [
+                    'post_id' => 'required',
+                    'komentar' => 'required',
+                ]);
+
+                $user = JWTAuth::toUser($request->bearerToken());
+
+                $user_id = $user->id;
+                $post_id = $request->input('post_id');
+                $komentar = $request->input('komentar');
+
+                $komentar_db = new Komentar([
+                    'user_id' => $user_id,
+                    'post_id' => $post_id,
+                    'komentar' => $komentar
+                ]);
+
+                if ($komentar_db->save()) {
+                    $message = [
+                        'msg' => 'Komentar created',
+                        'user id' => $user_id,
+                        'post id' => $post_id,
+                        'komentar' => $komentar,
+                    ];
+                    return response()->json($message, 201);
+                }
+
+                $response = [
+                    'msg' => 'Error during creating'
+                ];
+
+                return response()->json($response, 404);
+            }
+        } catch (JWTException $e) {
+            return response()->json(['message' => 'Something went wrong'], 404);
         }
-
-        $response = [
-            'msg' => 'Error during creating'
-        ];
-
-        return response()->json($response,404);
     }
 
 

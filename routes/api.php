@@ -18,12 +18,20 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 // });
 
-Route::group(['prefix' => 'v1','middleware'=>'cors'], function () {
-    Route::resource('meeting', 'PostController', [
+Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
+    Route::resource('post', 'PostController', [
         'except' => ['create', 'edit']
     ]);
 
-    Route::resource('meeting/regristation', 'RegisterController', [
+    Route::post('post/search', [
+        'uses' => 'PostController@search'
+    ]);
+
+    Route::post('post/filter', [
+        'uses' => 'PostController@filter'
+    ]);
+
+    Route::resource('post/regristation', 'RegisterController', [
         'only' => ['store', 'destroy']
     ]);
 
@@ -31,11 +39,30 @@ Route::group(['prefix' => 'v1','middleware'=>'cors'], function () {
         'except' => ['create', 'edit']
     ]);
 
-    Route::post('user/register', [
-        'uses' => 'AuthController@store'
-    ]);
+    Route::group(['prefix' => 'user'], function () {
 
-    Route::post('user/signin', [
-        'uses' => 'AuthController@signin'
-    ]);
+        Route::post('register', [
+            'uses' => 'AuthController@store'
+        ]);
+
+        Route::post('signin', [
+            'uses' => 'AuthController@signin'
+        ]);
+
+        Route::get('key', [
+            'uses' => 'AuthController@key'
+        ]);
+
+        Route::post('profil', [
+            'uses' => 'AuthController@profil'
+        ]);
+
+        Route::get('detail', [
+            'uses' => 'AuthController@detail'
+        ]);
+
+        Route::get('logout', [
+            'uses' => 'AuthController@logout'
+        ]);
+    });
 });
