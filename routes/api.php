@@ -57,6 +57,10 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
             'uses' => 'AuthController@profil'
         ]);
 
+        Route::post('verifikasi', [
+            'uses' => 'AuthController@verifikasi'
+        ]);
+
         Route::get('detail', [
             'uses' => 'AuthController@detail'
         ]);

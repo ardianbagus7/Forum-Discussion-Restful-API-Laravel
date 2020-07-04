@@ -115,7 +115,6 @@ class KomentarController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
     }
 
     /**
@@ -124,8 +123,33 @@ class KomentarController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
-        //
+        try {
+
+            $komentar = Komentar::findOrFail($id);
+            $user = JWTAuth::toUser($request->bearerToken());
+            $user_id = $user->id;
+            $role = $request->input('role');
+
+            if ($user_id != $komentar->user_id && $role != 6) {
+                return response()->json(['message' => 'user_not_found'], 404);
+            } else {
+
+
+                if (!$komentar->delete()) {
+                    return response()->json([
+                        'msg' => 'Delete failed'
+                    ], 404);
+                }
+
+                $response = [
+                    'msg' => 'Komentar deleted',
+                ];
+                return response()->json($response, 200);
+            }
+        } catch (JWTException $e) {
+            return response()->json(['message' => 'Something went wrong'], 404);
+        }
     }
 }

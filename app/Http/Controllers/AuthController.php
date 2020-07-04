@@ -21,7 +21,7 @@ class AuthController extends Controller
 
     public function __construct()
     {
-        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'logout']]);
+        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'logout', 'verifikasi']]);
     }
 
     public function store(Request $request)
@@ -31,97 +31,82 @@ class AuthController extends Controller
             'name' => 'required',
             'nrp' => 'required',
             'password' => 'required|min:5',
-            'key' => 'required',
             'angkatan' => 'required'
         ]);
 
         $name = $request->input('name');
         $nrp = $request->input('nrp');
         $password = $request->input('password');
-        $key = $request->input('key');
         $angkatan = $request->input('angkatan');
-        $role = $request->input('role');
+        $role = 0;
 
-        if (!$request->has('role')) {
-            $role = 0;
+
+        $user = new User([
+            'name' => $name,
+            'nrp' => $nrp,
+            'password' => bcrypt($password),
+            'angkatan' => $angkatan,
+            'role' => $role
+        ]);
+
+        if ($request->has('image')) {
+            $image = $request->file('image');
+            // Make a image name based on user name and current timestamp
+            $name = Str::slug($request->input('name')) . '_' . time();
+            // Define folder path
+            $folder = '/profile/';
+            // Make a file path where image will be stored [ folder path + file name + file extension]
+            $filePath = $folder . $name . '.' . $image->getClientOriginalExtension();
+            // Upload image
+
+            $name = !is_null($name) ? $name : Str::random(25);
+
+            $img = Image::make($image->getRealPath());
+
+            $img->resize(300, 300, function ($constraint) {
+                $constraint->aspectRatio();
+            })->save(public_path($filePath));
+
+            // $file = $image->storeAs($folder, $name . '.' . $image->getClientOriginalExtension(), 'public');
+
+            // Set user profile image path in database to filePath
+            $user->image = url('/') . $filePath;
+        } else {
+            $user->image = url('/') . '/profile/default.jpg';
         }
-        if ($key = Invitation::where('invitation', $key)->first()) {
 
-            $user = new User([
-                'name' => $name,
-                'nrp' => $nrp,
-                'password' => bcrypt($password),
-                'angkatan' => $angkatan,
-                'role' => $role
-            ]);
+        $credentials = [
+            'nrp' => $nrp,
+            'password' => $password
+        ];
 
-            if ($request->has('image')) {
-                $image = $request->file('image');
-                // Make a image name based on user name and current timestamp
-                $name = Str::slug($request->input('name')) . '_' . time();
-                // Define folder path
-                $folder = '/profile/';
-                // Make a file path where image will be stored [ folder path + file name + file extension]
-                $filePath = $folder . $name . '.' . $image->getClientOriginalExtension();
-                // Upload image
+        if ($user->save()) {
 
-                $name = !is_null($name) ? $name : Str::random(25);
-
-                $img = Image::make($image->getRealPath());
-
-                $img->resize(300, 300, function ($constraint) {
-                    $constraint->aspectRatio();
-                })->save(public_path($filePath));
-
-                // $file = $image->storeAs($folder, $name . '.' . $image->getClientOriginalExtension(), 'public');
-
-                // Set user profile image path in database to filePath
-                $user->image = url('/') . $filePath;
-            } else {
-                $user->image = url('/') . '/profile/default.jpg';
-            }
-
-            $credentials = [
-                'nrp' => $nrp,
-                'password' => $password
-            ];
-
-            if ($user->save()) {
-
-                $token = null;
-                try {
-                    if (!$token = JWTAuth::attempt($credentials)) {
-                        return response()->json([
-                            'msg' => 'nrp or Password are incorrect'
-                        ], 404);
-                    }
-                } catch (JWTException $e) {
+            $token = null;
+            try {
+                if (!$token = JWTAuth::attempt($credentials)) {
                     return response()->json([
-                        'msg' => 'failed_to_create_token'
+                        'msg' => 'nrp or Password are incorrect'
                     ], 404);
                 }
-
-                $user->signin = [
-                    'href' => 'api/v1/user/signin',
-                    'method' => 'POST',
-                    'param' => 'nrp,password'
-                ];
-                $response = [
-                    'msg' => 'User created',
-                    'user' => $user,
-                    'token' => $token
-                ];
-                $key->delete();
-                return response()->json($response, 201);
+            } catch (JWTException $e) {
+                return response()->json([
+                    'msg' => 'failed_to_create_token'
+                ], 404);
             }
 
             $response = [
-                'msg' => 'An error occured'
+                'msg' => 'User created',
+                'user' => $user,
+                'token' => $token
             ];
+            return response()->json($response, 201);
         }
+
         $response = [
-            'msg' => 'Key salah'
+            'msg' => 'An error occured'
         ];
+
 
         return response()->json($response, 404);
     }
@@ -302,6 +287,55 @@ class AuthController extends Controller
                 'error'   => true,
                 'message' => trans('auth.token.missing')
             ], 500);
+        }
+    }
+
+    public function verifikasi(Request $request)
+    {
+
+        $this->validate($request, [
+            'key' => 'required',
+            'role' => 'required'
+        ]);
+
+        $key = $request->input('key');
+        $role = $request->input('role');
+
+        try {
+            if (!$user = JWTAuth::toUser($request->bearerToken())) {
+                return response()->json(['message' => 'user_not_found'], 404);
+            } else {
+                if ($key = Invitation::where('invitation', $key)->first()) {
+
+                    $user = JWTAuth::toUser($request->bearerToken());
+
+                    $user->role = $role;
+
+                    if (!$user->save()) {
+                        return response()->json([
+                            'msg' => 'Error during update'
+                        ], 404);
+                    }
+
+                    $key->delete();
+
+                    $response = [
+                        'msg' => 'User Updated',
+                        'method' => $user
+                    ];
+
+                    return response()->json($response, 200);
+                } else {
+                    $response = [
+                        'msg' => 'Invitation key salah',
+                    ];
+
+                    return response()->json($response, 404);
+                }
+            }
+        } catch (JWTException $e) {
+
+            return response()->json(['message' => 'Something went wrong'], 404);
         }
     }
 }

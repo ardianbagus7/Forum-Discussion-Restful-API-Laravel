@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Post;
+use App\Komentar;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
@@ -26,7 +27,7 @@ class PostController extends Controller
      */
     public function index()
     {
-        $posts = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
+        $posts = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.id as userId', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
 
         $response = [
             'msg' => 'List of all posts',
@@ -132,8 +133,8 @@ class PostController extends Controller
     public function show($id)
     {
 
-        $post = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->where('posts.id', $id)->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'description', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
-        $komentar = DB::table('posts')->join('komentars', 'posts.id', '=', 'komentars.post_id')->join('users', 'komentars.user_id', '=', 'users.id')->where('post_id', $id)->select('komentars.user_id', 'users.image', 'name', 'nrp', 'users.image', 'komentar', 'komentars.created_at')->get();
+        $post = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->where('posts.id', $id)->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'description', 'posts.image as post_image', 'users.id as userId', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
+        $komentar = DB::table('posts')->join('komentars', 'posts.id', '=', 'komentars.post_id')->join('users', 'komentars.user_id', '=', 'users.id')->where('post_id', $id)->select('komentars.id', 'komentars.user_id', 'users.image', 'name', 'nrp', 'users.image', 'komentar', 'komentars.created_at')->get();
 
         $response = [
             'msg' => 'Post information',
@@ -167,9 +168,9 @@ class PostController extends Controller
         $user_id = $user->id;
         $image_lama = explode('/', $post->image);
         $image_lama = public_path() . '/' . $image_lama[3] . '/' . $image_lama[4];
-
+        $role = $request->input('role');
         try {
-            if ($user_id != $post->user_id) {
+            if ($user_id != $post->user_id && $role != 6) {
                 return response()->json(['message' => 'bukan creator post'], 404);
             } else {
 
@@ -197,26 +198,21 @@ class PostController extends Controller
                         $constraint->aspectRatio();
                     })->save(public_path($filePath));
 
+                    if ($image_lama != public_path() . '/post/default.jpg') {
+                        File::delete($image_lama);
+                    }
 
                     // $file = $img->save($folder, $name . '.' . $image->getClientOriginalExtension(), 'public');
 
                     // Set user profile image path in database to filePath
                     $post->image = url('/') . $filePath;
                 } else {
-                    $post->image = url('/') . '/post/default.jpg';
                 }
 
 
                 $title = $request->input('title');
                 $description = $request->input('description');
                 $kategori = $request->input('kategori');
-
-
-                if (!$post->where('user_id', $user_id)->first()) {
-                    return response()->json([
-                        'msg' => 'user not registered for post, update not successful'
-                    ], 404);
-                }
 
                 $post->kategori = $kategori;
                 $post->title = $title;
@@ -228,9 +224,7 @@ class PostController extends Controller
                     ], 404);
                 }
 
-                if ($image_lama != public_path() . '/post/default.jpg') {
-                    File::delete($image_lama);
-                }
+
 
                 $post->view_post = [
                     'href' => 'api/v1/post/' . $post->id,
@@ -257,11 +251,17 @@ class PostController extends Controller
      */
     public function destroy(Request $request, $id)
     {
+        //* POST
         $post = Post::findOrFail($id);
+        //* USER
         $user = JWTAuth::toUser($request->bearerToken());
         $user_id = $user->id;
+
+
+        //* IMAGE
         $image_lama = explode('/', $post->image);
         $image_lama = public_path() . '/' . $image_lama[3] . '/' . $image_lama[4];
+
         $role = $request->input('role');
 
         try {
@@ -269,13 +269,12 @@ class PostController extends Controller
             if ($user_id != $post->user_id && $role != 6) {
                 return response()->json(['message' => 'bukan creator post'], 404);
             } else {
-
                 if (!$post->delete()) {
                     return response()->json([
                         'msg' => 'Delete failed'
                     ], 404);
                 }
-
+               // DB::table('komentars')->join('posts', 'komentars.post_id', '=', 'posts.id')->where('post_id', $id)->delete();
                 $response = [
                     'msg' => 'Post deleted',
                 ];
