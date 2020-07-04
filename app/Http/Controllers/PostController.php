@@ -163,7 +163,7 @@ class PostController extends Controller
     public function update(Request $request, $id)
     {
 
-        $post = Post::with('users')->findOrFail($id);
+        $post = Post::findOrFail($id);
         $user = JWTAuth::toUser($request->bearerToken());
         $user_id = $user->id;
         $image_lama = explode('/', $post->image);
@@ -224,13 +224,6 @@ class PostController extends Controller
                     ], 404);
                 }
 
-
-
-                $post->view_post = [
-                    'href' => 'api/v1/post/' . $post->id,
-                    'method' => 'GET'
-                ];
-
                 $response = [
                     'msg' => 'Post Updated',
                     'method' => $post
@@ -274,7 +267,7 @@ class PostController extends Controller
                         'msg' => 'Delete failed'
                     ], 404);
                 }
-               // DB::table('komentars')->join('posts', 'komentars.post_id', '=', 'posts.id')->where('post_id', $id)->delete();
+                // DB::table('komentars')->join('posts', 'komentars.post_id', '=', 'posts.id')->where('post_id', $id)->delete();
                 $response = [
                     'msg' => 'Post deleted',
                 ];

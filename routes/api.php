@@ -49,7 +49,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
             'uses' => 'AuthController@signin'
         ]);
 
-        Route::get('key', [
+        Route::post('key', [
             'uses' => 'AuthController@key'
         ]);
 

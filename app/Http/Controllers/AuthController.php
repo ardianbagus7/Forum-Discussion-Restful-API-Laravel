@@ -21,27 +21,29 @@ class AuthController extends Controller
 
     public function __construct()
     {
-        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'logout', 'verifikasi']]);
+        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'key', 'logout', 'verifikasi']]);
     }
 
     public function store(Request $request)
     {
 
         $this->validate($request, [
+            'email' => 'required|email',
             'name' => 'required',
-            'nrp' => 'required',
             'password' => 'required|min:5',
             'angkatan' => 'required'
         ]);
 
+        $email = $request->input('email');
         $name = $request->input('name');
-        $nrp = $request->input('nrp');
         $password = $request->input('password');
         $angkatan = $request->input('angkatan');
         $role = 0;
+        $nrp = Str::slug($request->input('name')) . '_' . time();
 
 
         $user = new User([
+            'email' => $email,
             'name' => $name,
             'nrp' => $nrp,
             'password' => bcrypt($password),
@@ -76,7 +78,7 @@ class AuthController extends Controller
         }
 
         $credentials = [
-            'nrp' => $nrp,
+            'email' => $email,
             'password' => $password
         ];
 
@@ -86,7 +88,7 @@ class AuthController extends Controller
             try {
                 if (!$token = JWTAuth::attempt($credentials)) {
                     return response()->json([
-                        'msg' => 'nrp or Password are incorrect'
+                        'msg' => 'email or Password are incorrect'
                     ], 404);
                 }
             } catch (JWTException $e) {
@@ -115,16 +117,16 @@ class AuthController extends Controller
     {
 
         $this->validate($request, [
-            'nrp' => 'required',
+            'email' => 'required|email',
             'password' => 'required|min:5'
         ]);
 
-        $nrp = $request->input('nrp');
+        $email = $request->input('email');
         $password = $request->input('password');
 
-        if ($user = User::where('nrp', $nrp)->first()) {
+        if ($user = User::where('email', $email)->first()) {
             $credentials = [
-                'nrp' => $nrp,
+                'email' => $email,
                 'password' => $password
             ];
 
@@ -158,22 +160,35 @@ class AuthController extends Controller
 
     public function key(Request $request)
     {
-        $key = Str::random(6);
-
-        $invitation = new Invitation([
-            'invitation' => $key,
-
+        $this->validate($request, [
+            'role' => 'required',
         ]);
-        if ($invitation->save()) {
+
+        if ($request->input('role') == 6) {
+
+            $key = Str::random(6);
+
+            $invitation = new Invitation([
+                'invitation' => $key,
+
+            ]);
+            if ($invitation->save()) {
+                $response = [
+                    'msg' => 'sukses',
+                    'key' => $key
+                ];
+                return response()->json($response, 200);
+            }
             $response = [
-                'msg' => 'sukses'
+                'msg' => 'gagal'
             ];
-            return response()->json($response, 200);
+            return response()->json($response, 404);
+        } else {
+            $response = [
+                'msg' => 'gagal'
+            ];
+            return response()->json($response, 404);
         }
-        $response = [
-            'msg' => 'gagal'
-        ];
-        return response()->json($response, 404);
     }
 
     public function profil(Request $request)
@@ -295,9 +310,11 @@ class AuthController extends Controller
 
         $this->validate($request, [
             'key' => 'required',
+            'nrp' => 'required',
             'role' => 'required'
         ]);
 
+        $nrp = $request->input('nrp');
         $key = $request->input('key');
         $role = $request->input('role');
 
@@ -309,6 +326,7 @@ class AuthController extends Controller
 
                     $user = JWTAuth::toUser($request->bearerToken());
 
+                    $user->nrp = $nrp;
                     $user->role = $role;
 
                     if (!$user->save()) {
