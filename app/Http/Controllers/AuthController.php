@@ -166,7 +166,7 @@ class AuthController extends Controller
 
         if ($request->input('role') == 6) {
 
-            $key = Str::random(6);
+            $key = rand(100000, 999999);
 
             $invitation = new Invitation([
                 'invitation' => $key,
@@ -354,6 +354,32 @@ class AuthController extends Controller
         } catch (JWTException $e) {
 
             return response()->json(['message' => 'Something went wrong'], 404);
+        }
+    }
+
+    public function cekverifikasi(Request $request)
+    {
+
+        $this->validate($request, [
+            'key' => 'required',
+        ]);
+
+        $key = $request->input('key');
+
+        if ($key = Invitation::where('invitation', $key)->first()) {
+
+            $response = [
+                'msg' => 'Key valid',
+                'key' => $key
+            ];
+
+            return response()->json($response, 200);
+        } else {
+            $response = [
+                'msg' => 'Key tidak valid',
+            ];
+
+            return response()->json($response, 204);
         }
     }
 }
