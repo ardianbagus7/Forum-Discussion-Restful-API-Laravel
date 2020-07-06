@@ -41,6 +41,10 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
 
     Route::group(['prefix' => 'user'], function () {
 
+        Route::get('/', [
+            'uses' => 'AuthController@allUser'
+        ]);
+
         Route::post('register', [
             'uses' => 'AuthController@store'
         ]);
@@ -49,8 +53,12 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
             'uses' => 'AuthController@signin'
         ]);
 
-        Route::post('key', [
+        Route::get('key', [
             'uses' => 'AuthController@key'
+        ]);
+
+        Route::get('key/all', [
+            'uses' => 'AuthController@allKey'
         ]);
 
         Route::post('profil', [
@@ -60,7 +68,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
         Route::post('verifikasi', [
             'uses' => 'AuthController@verifikasi'
         ]);
-        
+
         Route::post('verifikasi/cek', [
             'uses' => 'AuthController@cekverifikasi'
         ]);
@@ -71,6 +79,19 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
 
         Route::get('logout', [
             'uses' => 'AuthController@logout'
+        ]);
+
+        Route::post('/{id}', [
+            'uses' => 'AuthController@destroy'
+        ]);
+
+        //ROLE ADMIN
+        Route::get('admin', [
+            'uses' => 'AuthController@allAdmin'
+        ]);
+
+        Route::post('admin/role', [
+            'uses' => 'AuthController@addAdmin'
         ]);
     });
 });
