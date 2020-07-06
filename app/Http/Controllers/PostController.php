@@ -27,10 +27,9 @@ class PostController extends Controller
      */
     public function index()
     {
-        $posts = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.id as userId', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
+        $posts = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.id as userId', 'users.name', 'users.image as user_image', 'posts.created_at')->paginate(10);
 
         $response = [
-            'msg' => 'List of all posts',
             'posts' => $posts
         ];
 

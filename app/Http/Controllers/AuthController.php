@@ -302,7 +302,7 @@ class AuthController extends Controller
                 return response()->json(['message' => 'user_not_found'], 404);
             } else {
                 $user = JWTAuth::toUser($request->bearerToken());
-                $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('user_id',  $user->id)->orderByRaw('created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
+                $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('user_id',  $user->id)->orderByRaw('created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->limit(5)->get();
                 $response = [
                     'msg' => 'succes',
                     'user' => $user,
@@ -423,7 +423,7 @@ class AuthController extends Controller
             } else {
                 $user = JWTAuth::toUser($request->bearerToken());
                 if ($user->role == 5 || $user->role == 6) {
-                    $list_user = User::simplePaginate(2);
+                    $list_user = User::orderBy('created_at', 'desc')->simplePaginate(5);
 
                     $response = [
                         'user' => $list_user
