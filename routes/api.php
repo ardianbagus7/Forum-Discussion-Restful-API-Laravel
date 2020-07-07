@@ -41,9 +41,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
 
     Route::group(['prefix' => 'user'], function () {
 
-        Route::get('/', [
-            'uses' => 'AuthController@allUser'
-        ]);
+
 
         Route::post('register', [
             'uses' => 'AuthController@store'
@@ -53,25 +51,11 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
             'uses' => 'AuthController@signin'
         ]);
 
-        Route::get('key', [
-            'uses' => 'AuthController@key'
-        ]);
-
-        Route::get('key/all', [
-            'uses' => 'AuthController@allKey'
-        ]);
 
         Route::post('profil', [
             'uses' => 'AuthController@profil'
         ]);
 
-        Route::post('verifikasi', [
-            'uses' => 'AuthController@verifikasi'
-        ]);
-
-        Route::post('verifikasi/cek', [
-            'uses' => 'AuthController@cekverifikasi'
-        ]);
 
         Route::get('detail', [
             'uses' => 'AuthController@detail'
@@ -81,17 +65,38 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
             'uses' => 'AuthController@logout'
         ]);
 
+        //* ADMIN
+        Route::get('/', [
+            'uses' => 'AdminController@allUser'
+        ]);
+
+        Route::get('key', [
+            'uses' => 'AdminController@key'
+        ]);
+
+        Route::get('key/all', [
+            'uses' => 'AdminController@allKey'
+        ]);
+
+        Route::post('verifikasi', [
+            'uses' => 'AdminController@verifikasi'
+        ]);
+
+        Route::post('verifikasi/cek', [
+            'uses' => 'AdminController@cekverifikasi'
+        ]);
+
         Route::post('/{id}', [
-            'uses' => 'AuthController@destroy'
+            'uses' => 'AdminController@destroy'
         ]);
 
         //ROLE ADMIN
         Route::get('admin', [
-            'uses' => 'AuthController@allAdmin'
+            'uses' => 'AdminController@allAdmin'
         ]);
 
         Route::post('admin/role', [
-            'uses' => 'AuthController@addAdmin'
+            'uses' => 'AdminController@addAdmin'
         ]);
 
         Route::post('admin/feedback', [
