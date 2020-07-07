@@ -93,5 +93,13 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
         Route::post('admin/role', [
             'uses' => 'AuthController@addAdmin'
         ]);
+
+        Route::post('admin/feedback', [
+            'uses' => 'AdminController@addFeedback'
+        ]);
+
+        Route::get('admin/feedback', [
+            'uses' => 'AdminController@viewFeedback'
+        ]);
     });
 });

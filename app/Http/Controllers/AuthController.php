@@ -205,7 +205,7 @@ class AuthController extends Controller
                 $user = JWTAuth::toUser($request->bearerToken());
                 if ($user->role == 5 || $user->role == 6) {
 
-                    $key = Invitation::all('invitation as key');
+                    $key = Invitation::orderBy('created_at', 'desc')->get('invitation as key');
 
                     $response = [
                         'msg' => 'list semua key',
@@ -489,22 +489,25 @@ class AuthController extends Controller
                 if ($user->role == 5 || $user->role == 6) {
 
                     $user_ganti = User::findOrFail($id);
+                    if ($user_ganti->role != 6) {
 
-                    $user_ganti->role = $role;
+                        $user_ganti->role = $role;
 
-                    if (!$user_ganti->save()) {
-                        return response()->json([
-                            'msg' => 'Error during update'
-                        ], 404);
+                        if (!$user_ganti->save()) {
+                            return response()->json([
+                                'msg' => 'Error during update'
+                            ], 404);
+                        }
+
+                        $response = [
+                            'msg' => 'User Updated',
+                            'method' => $user_ganti
+                        ];
+
+                        return response()->json($response, 200);
+                    } else {
+                        return response()->json(['msg' => 'tidak bisa menghapus akun developer', 'role' => $user_ganti->role], 404);
                     }
-
-
-                    $response = [
-                        'msg' => 'User Updated',
-                        'method' => $user
-                    ];
-
-                    return response()->json($response, 200);
                 } else {
                     return response()->json(['message' => 'Bukan admin'], 404);
                 }
@@ -531,7 +534,7 @@ class AuthController extends Controller
 
         try {
             if ($user_role != 5 && $user_role != 6) {
-                return response()->json(['message' => 'bukan admin','role'=>$user_role], 404);
+                return response()->json(['message' => 'bukan admin', 'role' => $user_role], 404);
             } else {
                 if ($user_id->role != 6) {
                     if (!$user_id->delete()) {
@@ -551,7 +554,7 @@ class AuthController extends Controller
 
                     return response()->json($response, 200);
                 } else {
-                    return response()->json(['msg' => 'tidak bisa menghapus akun developer', 'role'=>$user_id->role], 200);
+                    return response()->json(['msg' => 'tidak bisa menghapus akun developer', 'role' => $user_id->role], 404);
                 }
             }
         } catch (JWTException $e) {
