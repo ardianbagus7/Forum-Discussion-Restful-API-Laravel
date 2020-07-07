@@ -17,7 +17,7 @@ class AdminController extends Controller
 
     public function __construct()
     {
-        $this->middleware('jwt.auth',['except'=>'cekverifikasi']);
+        $this->middleware('jwt.auth', ['except' => 'cekverifikasi']);
     }
 
     public function verifikasi(Request $request)
@@ -188,19 +188,28 @@ class AdminController extends Controller
     }
 
 
-    public function allAdmin(Request $request)
+    public function filterUser(Request $request)
     {
         try {
             if (!$user = JWTAuth::toUser($request->bearerToken())) {
                 return response()->json(['message' => 'user_not_found'], 404);
             } else {
+
+
                 $user = JWTAuth::toUser($request->bearerToken());
                 if ($user->role == 5 || $user->role == 6) {
-                    $list_admin = User::Where('role', 5)->select('id', 'name', 'angkatan', 'nrp', 'role')->get();
-                    $list_developer = User::Where('role', 6)->select('id', 'name', 'angkatan', 'nrp', 'role')->get();
+
+                    $this->validate($request, [
+                        'role' => 'required',
+                    ]);
+
+                    $role = $request->input('role');
+
+                    $list_user = User::Where('role', $role)->orderBy('created_at', 'desc')->simplePaginate(5);
+                    //$list_developer = User::Where('role', 6)->select('id', 'name', 'angkatan', 'nrp', 'role')->get();
                     $response = [
-                        'developer' => $list_developer,
-                        'admin' => $list_admin
+                        //'developer' => $list_developer,
+                        'admin' => $list_user
                     ];
 
                     return response()->json($response, 200);
@@ -214,6 +223,41 @@ class AdminController extends Controller
         }
     }
 
+
+    public function searchUser(Request $request)
+    {
+        try {
+            if (!$user = JWTAuth::toUser($request->bearerToken())) {
+                return response()->json(['message' => 'user_not_found'], 404);
+            } else {
+
+
+                $user = JWTAuth::toUser($request->bearerToken());
+                if ($user->role == 5 || $user->role == 6) {
+
+                    $this->validate($request, [
+                        'search' => 'required',
+                    ]);
+
+                    $search = $request->input('search');
+
+                    $list_user = User::Where('name', 'like', '%'. $search .'%')->orWhere('nrp', 'like', '%'. $search .'%')->orderBy('created_at', 'desc')->get();
+                    //$list_developer = User::Where('role', 6)->select('id', 'name', 'angkatan', 'nrp', 'role')->get();
+                    $response = [
+                        //'developer' => $list_developer,
+                        'admin' => $list_user
+                    ];
+
+                    return response()->json($response, 200);
+                } else {
+                    return response()->json(['message' => 'Bukan admin'], 404);
+                }
+            }
+        } catch (JWTException $e) {
+
+            return response()->json(['message' => 'Something went wrong'], 404);
+        }
+    }
 
     public function addAdmin(Request $request)
     {

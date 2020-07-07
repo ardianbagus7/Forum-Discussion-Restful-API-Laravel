@@ -91,12 +91,16 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
         ]);
 
         //ROLE ADMIN
-        Route::get('admin', [
-            'uses' => 'AdminController@allAdmin'
+        Route::get('admin/role', [
+            'uses' => 'AdminController@filterUser'
         ]);
 
         Route::post('admin/role', [
             'uses' => 'AdminController@addAdmin'
+        ]);
+
+        Route::get('admin/search', [
+            'uses' => 'AdminController@searchUser'
         ]);
 
         Route::post('admin/feedback', [
