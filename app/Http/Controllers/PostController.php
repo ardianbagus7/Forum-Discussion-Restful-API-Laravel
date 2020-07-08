@@ -167,9 +167,8 @@ class PostController extends Controller
         $user_id = $user->id;
         $image_lama = explode('/', $post->image);
         $image_lama = public_path() . '/' . $image_lama[3] . '/' . $image_lama[4];
-        $role = $request->input('role');
         try {
-            if ($user_id != $post->user_id && $role != 6) {
+            if ($user_id != $post->user_id && $user->role != 6 && $user->role != 5) {
                 return response()->json(['message' => 'bukan creator post'], 404);
             } else {
 
@@ -254,11 +253,10 @@ class PostController extends Controller
         $image_lama = explode('/', $post->image);
         $image_lama = public_path() . '/' . $image_lama[3] . '/' . $image_lama[4];
 
-        $role = $request->input('role');
 
         try {
 
-            if ($user_id != $post->user_id && $role != 6) {
+            if ($user_id != $post->user_id && $user->role != 6 && $user->role != 5) {
                 return response()->json(['message' => 'bukan creator post'], 404);
             } else {
                 if (!$post->delete()) {
