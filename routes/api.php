@@ -39,6 +39,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
         'except' => ['create', 'edit']
     ]);
 
+
     Route::group(['prefix' => 'user'], function () {
 
 
@@ -109,6 +110,14 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
 
         Route::get('admin/feedback', [
             'uses' => 'AdminController@viewFeedback'
+        ]);
+
+        Route::post('admin/bug', [
+            'uses' => 'BugController@store'
+        ]);
+
+        Route::get('admin/bug', [
+            'uses' => 'BugController@index'
         ]);
     });
 });
