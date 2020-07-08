@@ -119,5 +119,13 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
         Route::get('admin/bug', [
             'uses' => 'BugController@index'
         ]);
+
+        Route::post('admin/form', [
+            'uses' => 'FormController@store'
+        ]);
+
+        Route::get('admin/form', [
+            'uses' => 'FormController@index'
+        ]);
     });
 });
