@@ -62,6 +62,11 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
             'uses' => 'AuthController@detail'
         ]);
 
+        Route::get('detail/{id}', [
+            'uses' => 'AuthController@profilUserLain'
+        ]);
+
+
         Route::get('logout', [
             'uses' => 'AuthController@logout'
         ]);

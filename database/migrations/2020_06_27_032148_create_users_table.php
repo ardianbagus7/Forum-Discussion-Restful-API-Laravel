@@ -17,6 +17,7 @@ class CreateUsersTable extends Migration
             $table->id();
             $table->string('email')->unique();
             $table->string('name');
+            $table->bigInteger('nomer');
             $table->string('angkatan')->nullable();
             $table->string('nrp')->unique();
             $table->string('image')->default(url('/') . '/profile/default.jpg');

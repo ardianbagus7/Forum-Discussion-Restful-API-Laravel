@@ -170,7 +170,7 @@ class AdminController extends Controller
             } else {
                 $user = JWTAuth::toUser($request->bearerToken());
                 if ($user->role == 5 || $user->role == 6) {
-                    $list_user = User::orderBy('created_at', 'desc')->simplePaginate(5);
+                    $list_user = User::orderBy('created_at', 'desc')->simplePaginate(10);
 
                     $response = [
                         'user' => $list_user

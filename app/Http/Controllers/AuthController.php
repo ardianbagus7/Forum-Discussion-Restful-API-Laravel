@@ -22,7 +22,7 @@ class AuthController extends Controller
 
     public function __construct()
     {
-        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'logout' ]]);
+        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'logout']]);
     }
 
     public function store(Request $request)
@@ -32,7 +32,7 @@ class AuthController extends Controller
             'email' => 'required|email',
             'name' => 'required',
             'password' => 'required|min:5',
-            'angkatan' => 'required'
+            'angkatan' => 'required',
         ]);
 
         $email = $request->input('email');
@@ -40,6 +40,7 @@ class AuthController extends Controller
         $password = $request->input('password');
         $angkatan = $request->input('angkatan');
         $role = 0;
+        $nomer = $request->input('nomer');
         $nrp = Str::slug($request->input('name')) . '_' . time();
 
 
@@ -49,7 +50,8 @@ class AuthController extends Controller
             'nrp' => $nrp,
             'password' => bcrypt($password),
             'angkatan' => $angkatan,
-            'role' => $role
+            'role' => $role,
+            'nomer' => $nomer,
         ]);
 
         if ($request->has('image')) {
@@ -177,12 +179,14 @@ class AuthController extends Controller
 
                 $name = $request->input('name');
                 $angkatan = $request->input('angkatan');
+                $nomer = $request->input('nomer');
 
                 $image_lama = explode('/', $user->image);
                 $image_lama = public_path() . '/' . $image_lama[3] . '/' . $image_lama[4];
 
                 $user->name = $name;
                 $user->angkatan = $angkatan;
+                $user->nomer = $nomer;
 
                 if ($request->has('image')) {
 
@@ -254,6 +258,21 @@ class AuthController extends Controller
         }
     }
 
+
+    public function profilUserLain(Request $request,$id)
+    {
+
+        $user = User::findOrFail($id);
+        $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('user_id',  $user->id)->orderByRaw('created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->limit(5)->get();
+        $response = [
+            'msg' => 'succes',
+            'user' => $user,
+            'post' => $data,
+        ];
+
+        return response()->json($response, 200);
+    }
+
     public function logout(Request $request)
     {
 
@@ -273,5 +292,4 @@ class AuthController extends Controller
             ], 500);
         }
     }
-
 }
