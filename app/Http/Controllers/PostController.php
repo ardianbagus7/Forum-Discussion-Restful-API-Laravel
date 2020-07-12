@@ -307,10 +307,9 @@ class PostController extends Controller
 
         $kategori = $request->input('kategori');
 
-        $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('kategori', 'like', '%' . $kategori . '%')->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
+        $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('kategori', 'like', '%' . $kategori . '%')->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.id as userId', 'users.name', 'users.image as user_image', 'posts.created_at')->paginate(10);
 
         $response = [
-            'msg' => 'filter succes',
             'posts' => $data
         ];
 

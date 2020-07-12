@@ -22,7 +22,7 @@ class AuthController extends Controller
 
     public function __construct()
     {
-        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'logout']]);
+        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'logout','profilUserLain']]);
     }
 
     public function store(Request $request)
@@ -263,7 +263,7 @@ class AuthController extends Controller
     {
 
         $user = User::findOrFail($id);
-        $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('user_id',  $user->id)->orderByRaw('created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->limit(5)->get();
+        $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('user_id',  $id)->orderByRaw('created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->limit(5)->get();
         $response = [
             'msg' => 'succes',
             'user' => $user,
