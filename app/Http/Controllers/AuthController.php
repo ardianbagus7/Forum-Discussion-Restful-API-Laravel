@@ -22,7 +22,7 @@ class AuthController extends Controller
 
     public function __construct()
     {
-        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'logout','profilUserLain']]);
+        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'logout', 'profilUserLain', 'notifall']]);
     }
 
     public function store(Request $request)
@@ -259,7 +259,7 @@ class AuthController extends Controller
     }
 
 
-    public function profilUserLain(Request $request,$id)
+    public function profilUserLain(Request $request, $id)
     {
 
         $user = User::findOrFail($id);
@@ -291,5 +291,38 @@ class AuthController extends Controller
                 'message' => trans('auth.token.missing')
             ], 500);
         }
+    }
+
+    public function notifall(Request $request)
+    {
+        try {
+            if (!$user = JWTAuth::toUser($request->bearerToken())) {
+                return response()->json(['message' => 'user_not_found'], 404);
+            } else {
+
+                $user = JWTAuth::toUser($request->bearerToken());
+                $user_id = $user->id;
+
+                $user_notif = DB::table('notifs')->WHERE('user_id', $user_id)->orderByRaw('created_at DESC')->paginate(10);
+
+                $message = [
+                    'notif' => $user_notif,
+                ];
+
+                return response()->json($message, 200);
+            }
+        } catch (JWTException $e) {
+
+            return response()->json(['message' => 'Something went wrong'], 404);
+        }
+    }
+
+
+    public function notif($id)
+    {
+
+        $user_notif = DB::table('notifs')->WHERE('user_id', $id)->orderByRaw('created_at DESC')->first();
+
+        return response()->json($user_notif, 200);
     }
 }

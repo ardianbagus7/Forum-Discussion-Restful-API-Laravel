@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Komentar;
+use App\Notif;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 use Tymon\JWTAuth\Facades\JWTAuth as JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException as JWTException;
@@ -53,8 +55,33 @@ class KomentarController extends Controller
                 $user = JWTAuth::toUser($request->bearerToken());
 
                 $user_id = $user->id;
+                $user_name = $user->name;
+                $user_image = $user->image;
                 $post_id = $request->input('post_id');
                 $komentar = $request->input('komentar');
+
+                // POST TARGET NOTIF
+                $user_notif = DB::table('posts')->WHERE('id', $post_id)->first();
+                $image_post_notif = $user_notif->image;
+                $user_id_notif = $user_notif->user_id;
+
+                if ($user_id_notif != $user_id) {
+
+                    $pesan = $user_name . ' mengomentari: ' . $komentar;
+
+                    $notif = new Notif([
+                        'imagePost' => $image_post_notif,
+                        'image' => $user_image,
+                        'user_id' => $user_id_notif,
+                        'user_pesan_id' => $user_id,
+                        'post_id' => $post_id,
+                        'pesan' => $pesan,
+                        'read' => 0,
+                    ]);
+
+                    $notif->save();
+                }
+                //
 
                 $komentar_db = new Komentar([
                     'user_id' => $user_id,
@@ -73,7 +100,7 @@ class KomentarController extends Controller
                 }
 
                 $response = [
-                    'msg' => 'Error during creating'
+                    'msg' => 'Error during creating',
                 ];
 
                 return response()->json($response, 404);

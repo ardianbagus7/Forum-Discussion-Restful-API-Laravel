@@ -133,7 +133,7 @@ class PostController extends Controller
     {
 
         $post = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->where('posts.id', $id)->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'description', 'posts.image as post_image', 'users.id as userId', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
-        $komentar = DB::table('posts')->join('komentars', 'posts.id', '=', 'komentars.post_id')->join('users', 'komentars.user_id', '=', 'users.id')->where('post_id', $id)->select('komentars.id', 'komentars.user_id', 'users.image', 'name', 'nrp', 'users.image', 'komentar', 'komentars.created_at')->get();
+        $komentar = DB::table('posts')->join('komentars', 'posts.id', '=', 'komentars.post_id')->join('users', 'komentars.user_id', '=', 'users.id')->where('post_id', $id)->orderByRaw('komentars.created_at ASC')->select('komentars.id', 'komentars.user_id', 'users.image', 'name', 'nrp', 'users.image', 'komentar', 'komentars.created_at')->get();
 
         $response = [
             'msg' => 'Post information',

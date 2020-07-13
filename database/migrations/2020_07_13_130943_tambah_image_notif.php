@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateTableFormVerifikasi extends Migration
+class TambahImageNotif extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,15 @@ class CreateTableFormVerifikasi extends Migration
      */
     public function up()
     {
-        Schema::create('form_verifs', function (Blueprint $table) {
+        Schema::create('notifs', function (Blueprint $table) {
             $table->id();
             $table->integer('user_id');
-            $table->string('nrp');
-            $table->string('verif_image')->default(url('/') . '/form/default.jpg');
+            $table->integer('post_id');
+            $table->string('imagePost')->default(url('/') . '/post/default.jpg');
+            $table->integer('user_pesan_id');
+            $table->string('image')->default(url('/') . '/profile/default.jpg');
+            $table->text('pesan');
+            $table->integer('read');
             $table->timestamps();
         });
     }
@@ -29,6 +33,6 @@ class CreateTableFormVerifikasi extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('form_verif');
+        Schema::dropIfExists('notifs');
     }
 }

@@ -19,6 +19,15 @@ use Illuminate\Support\Facades\Route;
 // });
 
 Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
+
+    Route::get('notif/{id}', [
+        'uses' => 'AuthController@notif'
+    ]);
+
+    Route::get('notifall', [
+        'uses' => 'AuthController@notifall'
+    ]);
+
     Route::resource('post', 'PostController', [
         'except' => ['create', 'edit']
     ]);
