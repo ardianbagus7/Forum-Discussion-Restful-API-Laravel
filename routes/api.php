@@ -23,9 +23,17 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
     Route::get('notif/{id}', [
         'uses' => 'AuthController@notif'
     ]);
+    // UPDATE READ 
+    Route::post('notif/{id}', [
+        'uses' => 'AuthController@notifread'
+    ]);
 
     Route::get('notifall', [
         'uses' => 'AuthController@notifall'
+    ]);
+    
+     Route::get('post/komentar/{id}', [
+        'uses' => 'PostController@komentar'
     ]);
 
     Route::resource('post', 'PostController', [

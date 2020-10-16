@@ -64,7 +64,10 @@ class KomentarController extends Controller
                 $user_notif = DB::table('posts')->WHERE('id', $post_id)->first();
                 $image_post_notif = $user_notif->image;
                 $user_id_notif = $user_notif->user_id;
-
+                $user_tujuan = DB::table('users')->WHERE('id', $user_id_notif)->first();
+                $fcm_notif = $user_tujuan->fcm;
+                
+                
                 if ($user_id_notif != $user_id) {
 
                     $pesan = $user_name . ' mengomentari: ' . $komentar;
@@ -80,6 +83,34 @@ class KomentarController extends Controller
                     ]);
 
                     $notif->save();
+                    
+                    // NOTIF PUSH FCM
+                    $url = "https://fcm.googleapis.com/fcm/send";            
+                    $header = [
+                    'authorization: key=AAAADBUA_Nc:APA91bG8p3HpAYzG20j-eUKgrt7CTBmwUT6Zl8pRybsW-Q05Qzwkz0feCjRqqTuI4SBq3NAZnKj0KsGSGKV39hu2JcLZY1lGQwaXLYXQ5msjGPJ2HtKFeDwu0RdiZ7hJu5pudSd9GO56',
+                        'content-type: application/json'
+                    ];    
+            
+                    $postdata = '{
+                        "to" : "' . $fcm_notif . '",
+                            "notification" : {
+                                "title":"Tune Notifikasi",
+                                "text" : "' . $pesan . '"
+                                "image": "' . $image_post_notif . '"
+                            },
+                        
+                    }';
+            
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, $url);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 60);
+                    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+            
+                    $result = curl_exec($ch);    
+                    curl_close($ch);
                 }
                 //
 

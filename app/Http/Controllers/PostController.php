@@ -27,7 +27,7 @@ class PostController extends Controller
      */
     public function index()
     {
-        $posts = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.id as userId', 'users.name', 'users.image as user_image', 'posts.created_at')->paginate(10);
+        $posts = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'description', 'kategori', 'posts.image as post_image', 'users.id as userId', 'users.name', 'users.role as userRole', 'users.image as user_image', 'posts.created_at')->paginate(10);
 
         $response = [
             'posts' => $posts
@@ -133,11 +133,21 @@ class PostController extends Controller
     {
 
         $post = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->where('posts.id', $id)->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'description', 'posts.image as post_image', 'users.id as userId', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
-        $komentar = DB::table('posts')->join('komentars', 'posts.id', '=', 'komentars.post_id')->join('users', 'komentars.user_id', '=', 'users.id')->where('post_id', $id)->orderByRaw('komentars.created_at ASC')->select('komentars.id', 'komentars.user_id', 'users.image', 'name', 'nrp', 'users.image', 'komentar', 'komentars.created_at')->get();
+       
 
         $response = [
             'msg' => 'Post information',
             'post' => $post,
+
+        ];
+        return response()->json($response, 200);
+    }
+    
+    public function komentar($id){
+        $komentar = DB::table('posts')->join('komentars', 'posts.id', '=', 'komentars.post_id')->join('users', 'komentars.user_id', '=', 'users.id')->where('post_id', $id)->orderByRaw('komentars.created_at ASC')->select('komentars.id', 'komentars.user_id', 'users.image', 'name', 'nrp', 'users.image','users.role', 'komentar', 'komentars.created_at')->paginate(10);
+
+        $response = [
+            'msg' => 'Komentar information',
             'komentar' => $komentar,
 
         ];
@@ -288,7 +298,7 @@ class PostController extends Controller
 
         $title = $request->input('title');
 
-        $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('title', 'like', '%' . $title . '%')->orderByRaw('created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.name', 'users.image as user_image', 'posts.created_at')->get();
+        $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('title', 'like', '%' . $title . '%')->orderByRaw('created_at DESC')->select('posts.id', 'title','description', 'kategori', 'posts.image as post_image', 'users.name', 'users.role as userRole', 'users.image as user_image', 'posts.created_at')->get();
 
         $response = [
             'msg' => 'search succes',
@@ -307,7 +317,7 @@ class PostController extends Controller
 
         $kategori = $request->input('kategori');
 
-        $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('kategori', 'like', '%' . $kategori . '%')->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'kategori', 'posts.image as post_image', 'users.id as userId', 'users.name', 'users.image as user_image', 'posts.created_at')->paginate(10);
+        $data = DB::table('posts')->join('users', 'posts.user_id', '=', 'users.id')->WHERE('kategori', 'like', '%' . $kategori . '%')->orderByRaw('posts.created_at DESC')->select('posts.id', 'title', 'description', 'kategori', 'posts.image as post_image', 'users.id as userId', 'users.name', 'users.role as userRole' ,'users.image as user_image', 'posts.created_at')->paginate(10);
 
         $response = [
             'posts' => $data

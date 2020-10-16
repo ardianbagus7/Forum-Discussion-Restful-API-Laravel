@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Invitation;
 use Illuminate\Http\Request;
 use App\User;
+use App\Notif;
 use Illuminate\Support\Str;
 use App\UploadTrait;
 use Illuminate\Support\Facades\File;
@@ -22,7 +23,7 @@ class AuthController extends Controller
 
     public function __construct()
     {
-        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'logout', 'profilUserLain', 'notifall']]);
+        $this->middleware('jwt.auth', ['only' => ['profil', 'detail', 'logout', 'profilUserLain', 'notifall','notifread']]);
     }
 
     public function store(Request $request)
@@ -42,6 +43,7 @@ class AuthController extends Controller
         $role = 0;
         $nomer = $request->input('nomer');
         $nrp = Str::slug($request->input('name')) . '_' . time();
+        $fcm = $request->input('fcm');
 
 
         $user = new User([
@@ -52,6 +54,7 @@ class AuthController extends Controller
             'angkatan' => $angkatan,
             'role' => $role,
             'nomer' => $nomer,
+            'fcm' => $fcm,
         ]);
 
         if ($request->has('image')) {
@@ -126,6 +129,8 @@ class AuthController extends Controller
 
         $email = $request->input('email');
         $password = $request->input('password');
+        
+        $fcm = $request->input('fcm');
 
         if ($user = User::where('email', $email)->first()) {
             $credentials = [
@@ -145,6 +150,10 @@ class AuthController extends Controller
                     'msg' => 'failed_to_create_token'
                 ], 404);
             }
+            
+            $user->fcm = $fcm;
+            
+            $user->save();
 
             $response = [
                 'msg' => 'User signin',
@@ -304,8 +313,11 @@ class AuthController extends Controller
                 $user_id = $user->id;
 
                 $user_notif = DB::table('notifs')->WHERE('user_id', $user_id)->orderByRaw('created_at DESC')->paginate(10);
-
+                $total_notif =  DB::table('notifs')->WHERE('user_id', $user_id)->where('read',0)->orderByRaw('created_at DESC')->count('read');
+               
+          
                 $message = [
+                    'total' => $total_notif,
                     'notif' => $user_notif,
                 ];
 
@@ -316,6 +328,46 @@ class AuthController extends Controller
             return response()->json(['message' => 'Something went wrong'], 404);
         }
     }
+
+
+    public function notifread(Request $request, $id)
+    {
+        try {
+            if (!$user = JWTAuth::toUser($request->bearerToken())) {
+                return response()->json(['message' => 'user_not_found'], 404);
+            } else {
+
+                $user = JWTAuth::toUser($request->bearerToken());
+
+                $user_id = $user->id;
+
+                $user_notif = Notif::findOrFail($id);
+
+                if ($user_notif->user_id == $user_id) {
+
+                    $user_notif->read = 1;
+
+                    if (!$user_notif->save()) {
+                        return response()->json([
+                            'msg' => 'Error during update'
+                        ], 404);
+                    }
+
+                    $response = [
+                        'msg' => 'notif Updated',
+                    ];
+
+                    return response()->json($response, 200);
+                } else{
+                    return response()->json('gagal update', 200);
+                }
+            }
+        } catch (JWTException $e) {
+
+            return response()->json(['message' => 'Something went wrong'], 404);
+        }
+    }
+
 
 
     public function notif($id)
