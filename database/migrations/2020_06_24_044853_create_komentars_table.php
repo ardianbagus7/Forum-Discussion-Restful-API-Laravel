@@ -16,7 +16,8 @@ class CreateKomentarsTable extends Migration
         Schema::create('komentars', function (Blueprint $table) {
             $table->id();
             $table->integer('user_id');
-            $table->integer('post_id');
+            $table->integer('post_id')->nullable();
+            $table->integer('story_id')->nullable();
             $table->text('komentar');
             $table->timestamps();
         });

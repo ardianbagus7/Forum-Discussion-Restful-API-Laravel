@@ -31,8 +31,8 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
     Route::get('notifall', [
         'uses' => 'AuthController@notifall'
     ]);
-    
-     Route::get('post/komentar/{id}', [
+
+    Route::get('post/komentar/{id}', [
         'uses' => 'PostController@komentar'
     ]);
 
@@ -56,11 +56,17 @@ Route::group(['prefix' => 'v1', 'middleware' => 'cors'], function () {
         'except' => ['create', 'edit']
     ]);
 
+    // STORY
+    Route::resource('story', 'StoryController', [
+        'except' => ['create', 'edit']
+    ]);
+    
+    Route::get('story/komentar/{id}', [
+        'uses' => 'StoryController@komentar'
+    ]);
+
 
     Route::group(['prefix' => 'user'], function () {
-
-
-
         Route::post('register', [
             'uses' => 'AuthController@store'
         ]);

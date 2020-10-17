@@ -48,7 +48,6 @@ class KomentarController extends Controller
             } else {
 
                 $this->validate($request, [
-                    'post_id' => 'required',
                     'komentar' => 'required',
                 ]);
 
@@ -58,16 +57,23 @@ class KomentarController extends Controller
                 $user_name = $user->name;
                 $user_image = $user->image;
                 $post_id = $request->input('post_id');
+                $story_id = $request->input('story_id');
                 $komentar = $request->input('komentar');
 
                 // POST TARGET NOTIF
-                $user_notif = DB::table('posts')->WHERE('id', $post_id)->first();
-                $image_post_notif = $user_notif->image;
-                $user_id_notif = $user_notif->user_id;
+                if ($post_id != null) {
+                    $user_notif = DB::table('posts')->WHERE('id', $post_id)->first();
+                    $image_post_notif = $user_notif->image;
+                    $user_id_notif = $user_notif->user_id;
+                } else if ($story_id != null) {
+                    $user_notif = DB::table('stories')->WHERE('id', $story_id)->first();
+                    $image_post_notif = $user_notif->image;
+                    $user_id_notif = $user_notif->user_id;
+                }
                 $user_tujuan = DB::table('users')->WHERE('id', $user_id_notif)->first();
                 $fcm_notif = $user_tujuan->fcm;
-                
-                
+
+
                 if ($user_id_notif != $user_id) {
 
                     $pesan = $user_name . ' mengomentari: ' . $komentar;
@@ -83,14 +89,14 @@ class KomentarController extends Controller
                     ]);
 
                     $notif->save();
-                    
+
                     // NOTIF PUSH FCM
-                    $url = "https://fcm.googleapis.com/fcm/send";            
+                    $url = "https://fcm.googleapis.com/fcm/send";
                     $header = [
-                    'authorization: key=AAAADBUA_Nc:APA91bG8p3HpAYzG20j-eUKgrt7CTBmwUT6Zl8pRybsW-Q05Qzwkz0feCjRqqTuI4SBq3NAZnKj0KsGSGKV39hu2JcLZY1lGQwaXLYXQ5msjGPJ2HtKFeDwu0RdiZ7hJu5pudSd9GO56',
+                        'authorization: key=AAAADBUA_Nc:APA91bG8p3HpAYzG20j-eUKgrt7CTBmwUT6Zl8pRybsW-Q05Qzwkz0feCjRqqTuI4SBq3NAZnKj0KsGSGKV39hu2JcLZY1lGQwaXLYXQ5msjGPJ2HtKFeDwu0RdiZ7hJu5pudSd9GO56',
                         'content-type: application/json'
-                    ];    
-            
+                    ];
+
                     $postdata = '{
                         "to" : "' . $fcm_notif . '",
                             "notification" : {
@@ -100,7 +106,7 @@ class KomentarController extends Controller
                             },
                         
                     }';
-            
+
                     $ch = curl_init();
                     curl_setopt($ch, CURLOPT_URL, $url);
                     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -108,8 +114,8 @@ class KomentarController extends Controller
                     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
                     curl_setopt($ch, CURLOPT_POSTFIELDS, $postdata);
                     curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-            
-                    $result = curl_exec($ch);    
+
+                    $result = curl_exec($ch);
                     curl_close($ch);
                 }
                 //
@@ -117,6 +123,7 @@ class KomentarController extends Controller
                 $komentar_db = new Komentar([
                     'user_id' => $user_id,
                     'post_id' => $post_id,
+                    'story_id' => $story_id,
                     'komentar' => $komentar
                 ]);
 
@@ -125,6 +132,7 @@ class KomentarController extends Controller
                         'msg' => 'Komentar created',
                         'user id' => $user_id,
                         'post id' => $post_id,
+                        'story_id' => $story_id,
                         'komentar' => $komentar,
                     ];
                     return response()->json($message, 201);
